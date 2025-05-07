@@ -1,0 +1,1483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home Buyer's Checklist Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --secondary: #64748b;
+            --neutral-50: #f8fafc;
+            --neutral-100: #f1f5f9;
+            --neutral-200: #e2e8f0;
+            --neutral-300: #cbd5e1;
+            --neutral-700: #334155;
+            --neutral-800: #1e293b;
+            --neutral-900: #0f172a;
+            --success: #22c55e;
+            --warning: #eab308;
+            --danger: #ef4444;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', sans-serif;
+        }
+        
+        body {
+            background-color: var(--neutral-100);
+            color: var(--neutral-800);
+            line-height: 1.6;
+        }
+
+        header {
+            background-color: white;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .logo svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        .intro {
+            padding: 3rem 0;
+            text-align: center;
+            background-color: white;
+            border-bottom: 1px solid var(--neutral-200);
+        }
+
+        .intro h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: var(--neutral-900);
+        }
+
+        .intro p {
+            font-size: 1.125rem;
+            max-width: 800px;
+            margin: 0 auto 2rem;
+            color: var(--secondary);
+        }
+
+        .credit {
+            font-size: 0.875rem;
+            color: var(--secondary);
+            margin-top: 1rem;
+        }
+
+        .app-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+            padding: 2rem 0;
+        }
+
+        @media (min-width: 1024px) {
+            .app-container {
+                grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            }
+        }
+
+        .preferences-section, .checklist-section {
+            background: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--neutral-800);
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--neutral-200);
+        }
+
+        .section-title svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        .category-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--neutral-800);
+            margin: 1.5rem 0 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .category-title svg {
+            width: 80px;
+            height: 80px;
+        }
+
+        .category-title:first-of-type {
+            margin-top: 0;
+        }
+
+        .preference-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .preference-item {
+            display: flex;
+            align-items: center;
+            padding: 0.5rem 0;
+        }
+
+        .preference-item label {
+            margin-left: 0.5rem;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .preference-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .preference-item.disabled {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .checklist-empty {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem 0;
+            color: var(--secondary);
+            text-align: center;
+        }
+
+        .checklist-empty svg {
+            width: 48px;
+            height: 48px;
+            color: var(--neutral-300);
+            margin-bottom: 1rem;
+        }
+
+        .checklist-items {
+            display: none;
+        }
+
+        .checklist-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .checklist-item {
+            display: flex;
+            align-items: flex-start;
+            padding: 0.75rem;
+            border-radius: 0.25rem;
+            margin-bottom: 0.5rem;
+            background-color: var(--neutral-50);
+            border-left: 3px solid var(--primary);
+        }
+
+        .checklist-item-content {
+            flex: 1;
+        }
+
+        .checklist-item-title {
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+        }
+
+        .checklist-item-desc {
+            font-size: 0.875rem;
+            color: var(--secondary);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 1.5rem;
+            justify-content: center;
+        }
+
+        .button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.375rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+            font-size: 0.875rem;
+        }
+
+        .button-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .button-primary:hover {
+            background-color: var(--primary-dark);
+        }
+
+        .button-outline {
+            background-color: transparent;
+            border: 1px solid var(--neutral-300);
+            color: var(--neutral-700);
+        }
+
+        .button-outline:hover {
+            background-color: var(--neutral-100);
+        }
+
+        .button svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        /* The modal background */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.5);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal.show {
+            opacity: 1;
+        }
+
+        /* Modal content */
+        .modal-content {
+            position: relative;
+            background-color: white;
+            margin: 10% auto;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transform: translateY(-20px);
+            transition: transform 0.3s ease;
+        }
+
+        .modal.show .modal-content {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--neutral-200);
+        }
+
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .close-button {
+            background: transparent;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--secondary);
+        }
+
+        .modal-body {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--neutral-300);
+            border-radius: 0.375rem;
+            font-size: 1rem;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+        }
+
+        /* Tooltip */
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            cursor: pointer;
+            margin-left: 0.25rem;
+        }
+
+        .tooltip svg {
+            width: 16px;
+            height: 16px;
+            color: var(--secondary);
+        }
+
+        .tooltip-text {
+            visibility: hidden;
+            width: 200px;
+            background-color: var(--neutral-800);
+            color: white;
+            text-align: center;
+            border-radius: 0.375rem;
+            padding: 0.5rem;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.75rem;
+            pointer-events: none;
+        }
+
+        .tooltip-text::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: var(--neutral-800) transparent transparent transparent;
+        }
+
+        .tooltip:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        /* Print styles */
+        @media print {
+            header, .preferences-section, .button-group {
+                display: none;
+            }
+
+            .app-container {
+                display: block;
+            }
+
+            .checklist-section {
+                box-shadow: none;
+                padding: 0;
+            }
+
+            .section-title {
+                border-bottom: 1px solid #000;
+            }
+        }
+
+        /* Pretty print  */
+        #printable-checklist {
+            display: none;
+            padding: 20px;
+            font-family: 'Helvetica', 'Arial', sans-serif;
+        }
+
+        .print-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .print-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .print-subtitle {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .print-category {
+            margin-top: 15px;
+            margin-bottom: 10px;
+        }
+
+        .print-category-title {
+            font-size: 18px;
+            font-weight: bold;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #eee;
+            margin-bottom: 10px;
+        }
+
+        .print-checklist-item {
+            margin-bottom: 12px;
+            display: flex;
+        }
+
+        .print-checkbox {
+            width: 16px;
+            height: 16px;
+            border: 1px solid #aaa;
+            margin-right: 10px;
+            margin-top: 3px;
+        }
+
+        .print-item-content {
+            flex: 1;
+        }
+
+        .print-item-title {
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .print-item-description {
+            font-size: 13px;
+            color: #666;
+        }
+
+        .print-footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 12px;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M11.47 3.84a.75.75 0 011.06 0l8.69 8.69a.75.75 0 101.06-1.06l-8.689-8.69a2.25 2.25 0 00-3.182 0l-8.69 8.69a.75.75 0 001.061 1.06l8.69-8.69z" />
+                        <path d="M12 5.432l8.159 8.159c.03.03.06.058.091.086v6.198c0 1.035-.84 1.875-1.875 1.875H15a.75.75 0 01-.75-.75v-4.5a.75.75 0 00-.75-.75h-3a.75.75 0 00-.75.75V21a.75.75 0 01-.75.75H5.625a1.875 1.875 0 01-1.875-1.875v-6.198a2.29 2.29 0 00.091-.086L12 5.43z" />
+                    </svg>
+                    <span>Home Buyer's Checklist</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <section class="intro">
+        <div class="container">
+            <h1>Your Personalized Home Buying Checklist</h1>
+            <p>Select your preferences and create a customized checklist to guide your home buying journey. Make informed decisions and find your perfect home with confidence.</p>
+            <div class="credit">Based on insights by Jaya Chakravarthi</div>
+        </div>
+    </section>
+
+    <main class="container">
+        <div class="app-container">
+            <div class="preferences-section">
+                <div class="section-title">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" />
+                    </svg>
+                    <span>Your Preferences</span>
+                </div>
+
+                <div class="preferences-content">
+                    <div class="category-title">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+                        </svg>
+                        <span>Property Type</span>
+                    </div>
+                    <div class="preference-group">
+                        <div class="preference-item">
+                            <input type="checkbox" id="individual-house" name="property-type" value="individual-house">
+                            <label for="individual-house">Individual House</label>
+                        </div>
+                        <div class="preference-item">
+                            <input type="checkbox" id="apartment" name="property-type" value="apartment">
+                            <label for="apartment">Apartment Complex / Gated Community</label>
+                        </div>
+                        <div class="preference-item">
+                            <input type="checkbox" id="builder-flat" name="property-type" value="builder-flat">
+                            <label for="builder-flat">Builder Flat / Small Apartment</label>
+                        </div>
+                        <div class="preference-item">
+                            <input type="checkbox" id="resale-property" name="property-type" value="resale-property">
+                            <label for="resale-property">Resale Property</label>
+                        </div>
+                    </div>
+
+                    <div class="category-title">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+                        </svg>
+                        <span>Location & Neighborhood</span>
+                    </div>
+                    <div class="preference-group">
+                        <div class="preference-item">
+                            <input type="checkbox" id="flood-free" name="location" value="flood-free">
+                            <label for="flood-free">Flood-free area (no water stagnation)</label>
+                        </div>
+                        <div class="preference-item">
+                            <input type="checkbox" id="residential-area" name="location" value="residential-area">
+                            <label for="residential-area">Residential area (non-industrial)</label>
+                        </div>
+                        <div class="preference-item">
+                            <input type="checkbox" id="nearby-schools" name="location" value="nearby-schools">
+                            <label for="nearby-schools">Nearby schools and educational institutions</label>
+                        </div>
+                        <div class="preference-item">
+                            <input type="checkbox" id="nearby-hospitals" name="location" value="nearby-hospitals">
+                            <label for="nearby-hospitals">Access to clinics and hospitals</label>
+                        </div>
+                        <div class="preference-item">
+                            <input type="checkbox" id="public-transport" name="location" value="public-transport">
+                            <label for="public-transport">Public transport access (bus stops, train stations)</label>
+                        </div>
+                        <div class="preference-item">
+                            <input type="checkbox" id="water-quality" name="location" value="water-quality">
+                            <label for="water-quality">Good groundwater / water quality</label>
+                        </div>
+                        <div class="preference-item">
+                            <input type="checkbox" id="air-quality" name="location" value="air-quality">
+                            <label for="air-quality">Good air quality</label>
+                        </div>
+                        <div class="preference-item">
+                            <input type="checkbox" id="entertainment" name="location" value="entertainment">
+                            <label for="entertainment">Entertainment and recreational facilities nearby</label>
+                        </div>
+                        <div class="preference-item">
+                            <input type="checkbox" id="family-nearby" name="location" value="family-nearby">
+                            <label for="family-nearby">Proximity to family/friends</label>
+                        </div>
+                        <div class="preference-item">
+                            <input type="checkbox" id="corporation-benefits" name="location" value="corporation-benefits">
+                            <label for="corporation-benefits">Corporation benefits (metro water, sewage lines)</label>
+                        </div>
+                    </div>
+
+                    <div class="category-title">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21" />
+                        </svg>
+                        <span>Property Features</span>
+                    </div>
+                    <div class="preference-group">
+                        <div class="preference-item">
+                            <input type="checkbox" id="floor-preference" name="property-features" value="floor-preference">
+                            <label for="floor-preference">Specific floor preference</label>
+                        </div>
+                        <div class="preference-item">
+                            <input type="checkbox" id="balcony" name="property-features" value="balcony">
+                            <label for="balcony">Good balcony space</label>
+                        </div>
+                        <div class="preference-item">
+                            <input type="checkbox" id="carpet-area" name="property-features" value="carpet-area">
+                            <label for="carpet-area">Maximizing carpet area (actual usable space)</label>
+                        </div>
+                        <div class="preference-item">
+                            <input type="checkbox" id="basic-amenities" name="property-features" value="basic-amenities">
+                            <label for="basic-amenities">Basic amenities only</label>
+                        </div>
+                        <div class="preference-item">
+                            <input type="checkbox" id="premium-amenities" name="property-features" value="premium-amenities">
+                            <label for="premium-amenities">Premium amenities (gym, pool, etc.)</label>
+                        </div>
+                        <div class="preference-item">
+                            <input type="checkbox" id="security" name="property-features" value="security">
+                            <label for="security">Security provisions</label>
+                        </div>
+                        <div class="preference-item">
+                            <input type="checkbox" id="power-backup" name="property-features" value="power-backup">
+                            <label for="power-backup">Power backup / Inverter facility</label>
+                        </div>
+                    </div>
+
+                    <div class="category-title">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" />
+                        </svg>
+                        <span>Financial Considerations</span>
+                    </div>
+                    <div class="preference-group">
+                        <div class="preference-item">
+                            <input type="checkbox" id="budget-constraint" name="financial" value="budget-constraint">
+                            <label for="budget-constraint">Strict budget constraint</label>
+                        </div>
+                        <div class="preference-item">
+                            <input type="checkbox" id="emi-planning" name="financial" value="emi-planning">
+                            <label for="emi-planning">EMI planning and loan considerations</label>
+                        </div>
+                        <div class="preference-item">
+                            <input type="checkbox" id="additional-costs" name="financial" value="additional-costs">
+                            <label for="additional-costs">Additional costs awareness (registration, GST, etc.)</label>
+                        </div>
+                        <div class="preference-item">
+                            <input type="checkbox" id="maintenance-cost" name="financial" value="maintenance-cost">
+                            <label for="maintenance-cost">Monthly maintenance cost considerations</label>
+                        </div>
+                    </div>
+
+                    <div class="category-title">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 004.486-6.336l-3.276 3.277a3.004 3.004 0 01-2.25-2.25l3.276-3.276a4.5 4.5 0 00-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437l1.745-1.437m6.615 8.206L15.75 15.75M4.867 19.125h.008v.008h-.008v-.008z" />
+                        </svg>
+                        <span>Legal & Documentation</span>
+                    </div>
+                    <div class="preference-group">
+                        <div class="preference-item">
+                            <input type="checkbox" id="legal-verification" name="legal" value="legal-verification">
+                            <label for="legal-verification">Legal verification of property documents</label>
+                        </div>
+                        <div class="preference-item">
+                            <input type="checkbox" id="builder-reputation" name="legal" value="builder-reputation">
+                            <label for="builder-reputation">Builder reputation and reliability</label>
+                        </div>
+                        <div class="preference-item">
+                            <input type="checkbox" id="delivery-timeline" name="legal" value="delivery-timeline">
+                            <label for="delivery-timeline">Delivery timeline and potential delays</label>
+                        </div>
+                        <div class="preference-item">
+                            <input type="checkbox" id="ownership-uds" name="legal" value="ownership-uds">
+                            <label for="ownership-uds">Undivided Share (UDS) awareness</label>
+                        </div>
+                    </div>
+
+                    <div class="category-title">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        <span>Infrastructure & Specifications</span>
+                    </div>
+                    <div class="preference-group">
+                        <div class="preference-item">
+                            <input type="checkbox" id="ac-provisions" name="infrastructure" value="ac-provisions">
+                            <label for="ac-provisions">AC provisions/vents</label>
+                        </div>
+                        <div class="preference-item">
+                            <input type="checkbox" id="kitchen-provisions" name="infrastructure" value="kitchen-provisions">
+                            <label for="kitchen-provisions">Kitchen specifications (chimney facility, cabinets)</label>
+                        </div>
+                        <div class="preference-item">
+                            <input type="checkbox" id="build-quality" name="infrastructure" value="build-quality">
+                            <label for="build-quality">Build quality and materials used</label>
+                        </div>
+                        <div class="preference-item">
+                            <input type="checkbox" id="safety-features" name="infrastructure" value="safety-features">
+                            <label for="safety-features">Safety features (grills, balcony safety)</label>
+                        </div>
+                        <div class="preference-item">
+                            <input type="checkbox" id="pest-control" name="infrastructure" value="pest-control">
+                            <label for="pest-control">Pest control measures</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button id="generate-checklist" class="button button-primary">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Generate My Checklist
+                    </button>
+                    <button id="reset-preferences" class="button button-outline">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                        </svg>
+                        Reset All
+                    </button>
+                </div>
+            </div>
+
+            <div class="checklist-section">
+                <div class="section-title">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>Your Personalized Checklist</span>
+                </div>
+
+                <div class="checklist-empty">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" />
+                    </svg>
+                    <p>Select your preferences and click "Generate My Checklist" to create your personalized home buying guide.</p>
+                </div>
+
+                <div class="checklist-items">
+                    <!-- This will be populated by JavaScript -->
+                </div>
+
+                <div class="button-group">
+                    <button id="download-pdf" class="button button-primary" style="display: none;">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                        </svg>
+                        Download as PDF
+                    </button>
+                    <button id="customize-checklist" class="button button-outline" style="display: none;">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                        </svg>
+                        Customize Checklist
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal for customizing the checklist -->
+    <div id="customize-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Customize Your Checklist</h2>
+                <button class="close-button">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="buyer-name">Your Name</label>
+                    <input type="text" id="buyer-name" class="form-control" placeholder="Enter your name">
+                </div>
+                <div class="form-group">
+                    <label for="buyer-email">Email</label>
+                    <input type="email" id="buyer-email" class="form-control" placeholder="Enter your email">
+                </div>
+                <div class="form-group">
+                    <label for="buyer-notes">Additional Notes</label>
+                    <textarea id="buyer-notes" class="form-control" rows="3" placeholder="Any additional notes or requirements"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="cancel-customize" class="button button-outline">Cancel</button>
+                <button id="save-customize" class="button button-primary">Save & Download</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden div for PDF export -->
+    <div id="printable-checklist" style="display: none;">
+        <div class="print-header">
+            <div class="print-title">Home Buyer's Checklist</div>
+            <div class="print-subtitle">A personalized guide for your home buying journey</div>
+        </div>
+        <div id="print-buyer-info">
+            <!-- Will be populated with buyer info -->
+        </div>
+        <div id="print-checklist-content">
+            <!-- Will be populated by JavaScript -->
+        </div>
+        <div class="print-footer">
+            Generated on <span id="print-date"></span> • Based on insights by Jaya Chakravarthi
+        </div>
+    </div>
+
+    <script>
+        // Mock data for the checklist items based on preferences
+        const checklistData = {
+            "property-type": {
+                "title": "Property Type Considerations",
+                "items": {
+                    "individual-house": {
+                        "title": "Individual House Considerations",
+                        "description": "Full control and freedom to build, remodel, or modify. Ensure you're prepared for maintenance responsibilities."
+                    },
+                    "apartment": {
+                        "title": "Apartment Complex Considerations",
+                        "description": "Check amenities, community rules, maintenance charges, and potential construction timelines or delays."
+                    },
+                    "builder-flat": {
+                        "title": "Builder Flat Considerations",
+                        "description": "Verify maintenance arrangements, community setup, and available amenities in smaller apartment complexes."
+                    },
+                    "resale-property": {
+                        "title": "Resale Property Considerations",
+                        "description": "Check the age of the house, life expectancy, necessary modifications, existing infrastructure, and net gain vs. buying new."
+                    }
+                }
+            },
+            "location": {
+                "title": "Location & Neighborhood Checks",
+                "items": {
+                    "flood-free": {
+                        "title": "Flood Risk Assessment",
+                        "description": "Research the area's history of flooding and water stagnation. Check during or after rainfall if possible.",
+                        "granular_tasks": [
+                            "Research the area's flooding history",
+                            "Visit during/after rainfall if possible",
+                            "Talk to neighbors about water stagnation issues",
+                            "Check local flood maps",
+                            "Verify drainage systems in the area"
+                        ]
+                    },
+                    "residential-area": {
+                        "title": "Neighborhood Character",
+                        "description": "Ensure the area is primarily residential rather than industrial in appearance and function.",
+                        "granular_tasks": [
+                            "Confirm area is primarily residential",
+                            "Check for nearby industrial facilities",
+                            "Assess neighborhood aesthetics",
+                            "Research zoning regulations",
+                            "Check future development plans for the area"
+                        ]
+                    },
+                    "nearby-schools": {
+                        "title": "Educational Facilities",
+                        "description": "Map out nearby schools and educational institutions and assess their quality and accessibility.",
+                        "granular_tasks": [
+                            "Identify nearby schools and educational institutions",
+                            "Research school ratings and quality",
+                            "Check distance and accessibility",
+                            "Visit schools if possible",
+                            "Talk to parents in the neighborhood"
+                        ]
+                    },
+                    "nearby-hospitals": {
+                        "title": "Healthcare Access",
+                        "description": "Identify nearby clinics, hospitals, and medical facilities for regular and emergency care.",
+                        "granular_tasks": [
+                            "Locate nearby hospitals and emergency care",
+                            "Find local clinics and medical practices",
+                            "Check distance to specialized care facilities",
+                            "Verify ambulance response times if possible",
+                            "Research quality of nearby healthcare facilities"
+                        ]
+                    },
+                    "public-transport": {
+                        "title": "Public Transportation",
+                        "description": "Check proximity to bus stops, train stations, and overall connectivity to key areas.",
+                        "granular_tasks": [
+                            "Locate nearest bus stops",
+                            "Find nearest train/metro stations",
+                            "Check frequency of public transport",
+                            "Assess connectivity to workplace",
+                            "Evaluate connectivity to key city areas"
+                        ]
+                    },
+                    "water-quality": {
+                        "title": "Water Quality Assessment",
+                        "description": "Test groundwater quality, reliability of water supply, and taste if possible.",
+                        "granular_tasks": [
+                            "Test groundwater quality",
+                            "Check reliability of water supply",
+                            "Taste water if possible",
+                            "Inquire about water source and treatment",
+                            "Check for water pressure issues"
+                        ]
+                    },
+                    "air-quality": {
+                        "title": "Air Quality Evaluation",
+                        "description": "Research air quality in the area, particularly if near industrial zones or high-traffic areas.",
+                        "granular_tasks": [
+                            "Research local air quality index",
+                            "Check proximity to industrial zones",
+                            "Verify distance from high-traffic areas",
+                            "Look for airborne allergens",
+                            "Consider seasonal air quality variations"
+                        ]
+                    },
+                    "entertainment": {
+                        "title": "Entertainment & Recreation",
+                        "description": "Map out nearby parks, theatres, restaurants, shopping, and recreational facilities."
+                    },
+                    "family-nearby": {
+                        "title": "Family & Friends Proximity",
+                        "description": "Consider distance from family and friends for social support and convenience."
+                    },
+                    "corporation-benefits": {
+                        "title": "Municipal Services",
+                        "description": "Verify availability of corporation services like metro water, sewage lines, and waste management."
+                    }
+                }
+            },
+            "property-features": {
+                "title": "Property Features & Specifications",
+                "items": {
+                    "floor-preference": {
+                        "title": "Floor Level Considerations",
+                        "description": "Balance between airflow, natural light, noise levels, heat (especially for top floors), and accessibility."
+                    },
+                    "balcony": {
+                        "title": "Balcony Assessment",
+                        "description": "Check size, orientation, privacy, and safety features, especially for higher floors."
+                    },
+                    "carpet-area": {
+                        "title": "Space Utilization Analysis",
+                        "description": "Verify actual carpet area vs. built-up area and evaluate how the space feels with your furniture needs."
+                    },
+                    "basic-amenities": {
+                        "title": "Basic Amenities Verification",
+                        "description": "Identify and assess essential amenities offered and evaluate if they meet your needs."
+                    },
+                    "premium-amenities": {
+                        "title": "Premium Amenities Evaluation",
+                        "description": "Assess premium amenities like gym, pool, etc. and whether they justify additional costs."
+                    },
+                    "security": {
+                        "title": "Security Provisions",
+                        "description": "Evaluate security measures including guards, cameras, access controls, and neighborhood safety."
+                    },
+                    "power-backup": {
+                        "title": "Power Backup Solutions",
+                        "description": "Check for inverter facilities, generator backup, and provisions for power failures."
+                    }
+                }
+            },
+            "financial": {
+                "title": "Financial Planning",
+                "items": {
+                    "budget-constraint": {
+                        "title": "Budget Analysis",
+                        "description": "Establish a firm budget ceiling and avoid exceeding it even with persuasive marketing."
+                    },
+                    "emi-planning": {
+                        "title": "EMI & Loan Planning",
+                        "description": "Calculate affordable EMI, loan tenure, upfront payment capacity, and choose reputable financial institutions."
+                    },
+                    "additional-costs": {
+                        "title": "Additional Costs Estimation",
+                        "description": "Factor in registration (6%), GST (6%), insurance, parking, association charges, and interior work costs."
+                    },
+                    "maintenance-cost": {
+                        "title": "Monthly Maintenance Planning",
+                        "description": "Assess monthly maintenance charges, especially in larger apartment complexes with extensive amenities."
+                    }
+                }
+            },
+            "legal": {
+                "title": "Legal & Documentation",
+                "items": {
+                    "legal-verification": {
+                        "title": "Legal Document Verification",
+                        "description": "Have all papers checked by a trusted lawyer and resolve any legal issues before proceeding."
+                    },
+                    "builder-reputation": {
+                        "title": "Builder Reputation Research",
+                        "description": "Research builder's history, completed projects, customer reviews, and delivery track record."
+                    },
+                    "delivery-timeline": {
+                        "title": "Delivery Timeline Assessment",
+                        "description": "Understand realistic completion dates, potential delays, and financial implications of extended pre-EMI periods."
+                    },
+                    "ownership-uds": {
+                        "title": "UDS Verification",
+                        "description": "Verify Undivided Share of land, especially important for future redevelopment or reconstruction."
+                    }
+                }
+            },
+            "infrastructure": {
+                "title": "Infrastructure & Quality",
+                "items": {
+                    "ac-provisions": {
+                        "title": "AC Installation Provisions",
+                        "description": "Check for pre-installed AC vents or provisions for future installation in appropriate locations."
+                    },
+                    "kitchen-provisions": {
+                        "title": "Kitchen Infrastructure",
+                        "description": "Verify chimney provisions, cabinet quality, counter space, and overall kitchen functionality."
+                    },
+                    "build-quality": {
+                        "title": "Construction Quality Assessment",
+                        "description": "Evaluate materials used (cement, TMT rods, paints, tiles) against promised specifications."
+                    },
+                    "safety-features": {
+                        "title": "Safety Feature Verification",
+                        "description": "Check for balcony grills, window safety, fire safety systems, and child safety features."
+                    },
+                    "pest-control": {
+                        "title": "Pest Control Measures",
+                        "description": "Inquire about pest control treatments, mosquito prevention, and ongoing pest management."
+                    }
+                }
+            }
+        };
+
+        // DOM elements
+        const generateBtn = document.getElementById('generate-checklist');
+        const resetBtn = document.getElementById('reset-preferences');
+        const downloadBtn = document.getElementById('download-pdf');
+        const customizeBtn = document.getElementById('customize-checklist');
+        const checklistEmpty = document.querySelector('.checklist-empty');
+        const checklistItems = document.querySelector('.checklist-items');
+        const modal = document.getElementById('customize-modal');
+        const closeModalBtn = document.querySelector('.close-button');
+        const cancelCustomizeBtn = document.getElementById('cancel-customize');
+        const saveCustomizeBtn = document.getElementById('save-customize');
+
+        // Event listeners
+        generateBtn.addEventListener('click', generateChecklist);
+        resetBtn.addEventListener('click', resetPreferences);
+        downloadBtn.addEventListener('click', () => {
+            modal.style.display = 'block';
+            setTimeout(() => {
+                modal.classList.add('show');
+            }, 10);
+        });
+        customizeBtn.addEventListener('click', () => {
+            modal.style.display = 'block';
+            setTimeout(() => {
+                modal.classList.add('show');
+            }, 10);
+        });
+        closeModalBtn.addEventListener('click', closeModal);
+        cancelCustomizeBtn.addEventListener('click', closeModal);
+        saveCustomizeBtn.addEventListener('click', generatePDF);
+
+        // Close modal when clicking outside
+        window.addEventListener('click', function(event) {
+            if (event.target === modal) {
+                closeModal();
+            }
+        });
+
+        // Function to close the modal
+        function closeModal() {
+            modal.classList.remove('show');
+            setTimeout(() => {
+                modal.style.display = 'none';
+            }, 300);
+        }
+
+        // Function to generate checklist based on preferences
+        function generateChecklist() {
+            // Get all checked preferences
+            const checkedPreferences = document.querySelectorAll('input[type="checkbox"]:checked');
+            
+            // If no preferences are selected
+            if (checkedPreferences.length === 0) {
+                alert('Please select at least one preference to generate your checklist.');
+                return;
+            }
+
+            // Clear previous checklist
+            checklistItems.innerHTML = '';
+            
+            // Hide empty state
+            checklistEmpty.style.display = 'none';
+            
+            // Show checklist items
+            checklistItems.style.display = 'block';
+            
+            // Show download and customize buttons
+            downloadBtn.style.display = 'flex';
+            customizeBtn.style.display = 'flex';
+            
+            // Track categories that have been added
+            const addedCategories = new Set();
+            
+            // Add property type info section first if any property type is selected
+            const propertyTypeCheckboxes = document.querySelectorAll('input[name="property-type"]:checked');
+            
+            if (propertyTypeCheckboxes.length > 0) {
+                const propertyInfoSection = document.createElement('div');
+                propertyInfoSection.className = 'checklist-group';
+                propertyInfoSection.innerHTML = `
+                    <div class="category-title">Property Type Considerations</div>
+                    <div style="padding: 10px; background-color: var(--neutral-50); border-radius: 5px; margin-bottom: 20px;">
+                        <p style="margin-bottom: 10px; font-style: italic;">Property type information (not part of checklist items):</p>
+                `;
+                
+                propertyTypeCheckboxes.forEach(checkbox => {
+                    const value = checkbox.value;
+                    if (checklistData["property-type"] && checklistData["property-type"].items[value]) {
+                        const item = checklistData["property-type"].items[value];
+                        propertyInfoSection.innerHTML += `
+                            <div style="margin-bottom: 10px;">
+                                <div style="font-weight: 500;">${item.title}</div>
+                                <div style="font-size: 0.875rem; color: var(--secondary);">${item.description}</div>
+                            </div>
+                        `;
+                    }
+                });
+                
+                propertyInfoSection.innerHTML += `</div>`;
+                checklistItems.appendChild(propertyInfoSection);
+                addedCategories.add("property-type");
+            }
+            
+            // Process other checked preferences
+            checkedPreferences.forEach(preference => {
+                const category = preference.name;
+                const value = preference.value;
+                
+                // Skip property-type as we've already handled it
+                if (category === "property-type") {
+                    return;
+                }
+                
+                // Check if this category exists in our data
+                if (checklistData[category] && checklistData[category].items[value]) {
+                    // Add category heading if it hasn't been added yet
+                    if (!addedCategories.has(category)) {
+                        const categoryElement = document.createElement('div');
+                        categoryElement.className = 'checklist-group';
+                        categoryElement.innerHTML = `
+                            <div class="category-title">${checklistData[category].title}</div>
+                        `;
+                        checklistItems.appendChild(categoryElement);
+                        addedCategories.add(category);
+                    }
+                    
+                    // Add checklist item
+                    const item = checklistData[category].items[value];
+                    const itemElement = document.createElement('div');
+                    itemElement.className = 'checklist-item';
+                    itemElement.innerHTML = `
+                        <div class="checklist-item-content">
+                            <div class="checklist-item-title">${item.title}</div>
+                            <div class="checklist-item-desc">${item.description}</div>
+                        </div>
+                    `;
+                    
+                    // Find the category group and append item
+                    const categoryGroup = Array.from(checklistItems.querySelectorAll('.checklist-group')).find(
+                        group => group.querySelector('.category-title').textContent === checklistData[category].title
+                    );
+                    categoryGroup.appendChild(itemElement);
+                }
+            });
+            
+            // Scroll to checklist section
+            document.querySelector('.checklist-section').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Function to reset all preferences
+        function resetPreferences() {
+            // Uncheck all checkboxes
+            document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            
+            // Hide checklist items
+            checklistItems.style.display = 'none';
+            
+            // Show empty state
+            checklistEmpty.style.display = 'flex';
+            
+            // Hide download and customize buttons
+            downloadBtn.style.display = 'none';
+            customizeBtn.style.display = 'none';
+        }
+
+        // Function to generate PDF
+        function generatePDF() {
+            // Get buyer info
+            const buyerName = document.getElementById('buyer-name').value || 'Home Buyer';
+            const buyerEmail = document.getElementById('buyer-email').value || '';
+            const buyerNotes = document.getElementById('buyer-notes').value || '';
+            
+            // Get current date
+            const currentDate = new Date().toLocaleDateString();
+            
+            // Initialize PDF - use a more efficient approach than HTML2Canvas
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            
+            // A4 dimensions
+            const pageWidth = 210;
+            const pageHeight = 297;
+            const margin = 20;
+            const contentWidth = pageWidth - (margin * 2);
+            
+            // Text formatting
+            const titleFontSize = 16;
+            const headingFontSize = 12;
+            const subheadingFontSize = 10;
+            const normalFontSize = 9;
+            const smallFontSize = 8;
+            
+            let yPosition = margin;
+            let pageCount = 1;
+            
+            // Helper function to add a new page
+            function addNewPage() {
+                pdf.addPage();
+                pageCount++;
+                yPosition = margin;
+                
+                // Add header and page number
+                pdf.setFontSize(smallFontSize);
+                pdf.setTextColor(100, 100, 100);
+                pdf.text(`Home Buyer's Checklist - Page ${pageCount}`, margin, 10);
+            }
+            
+            // Helper function to check if we need a new page
+            function checkNewPage(heightNeeded) {
+                if (yPosition + heightNeeded > pageHeight - margin) {
+                    addNewPage();
+                    return true;
+                }
+                return false;
+            }
+            
+            // Add title
+            pdf.setFontSize(titleFontSize);
+            pdf.setFont(undefined, 'bold');
+            pdf.setTextColor(0, 0, 0);
+            pdf.text("Home Buyer's Checklist", margin, yPosition);
+            yPosition += 8;
+            
+            // Add subtitle
+            pdf.setFontSize(subheadingFontSize);
+            pdf.setFont(undefined, 'italic');
+            pdf.setTextColor(100, 100, 100);
+            pdf.text("A personalized guide for your home buying journey", margin, yPosition);
+            yPosition += 10;
+            
+            // Add buyer info
+            pdf.setFontSize(headingFontSize);
+            pdf.setFont(undefined, 'bold');
+            pdf.setTextColor(0, 0, 0);
+            pdf.text("Buyer Information", margin, yPosition);
+            yPosition += 6;
+            
+            pdf.setFontSize(normalFontSize);
+            pdf.setFont(undefined, 'normal');
+            pdf.text(`Name: ${buyerName}`, margin, yPosition);
+            yPosition += 5;
+            
+            if (buyerEmail) {
+                pdf.text(`Email: ${buyerEmail}`, margin, yPosition);
+                yPosition += 5;
+            }
+            
+            if (buyerNotes) {
+                checkNewPage(15);
+                pdf.text("Notes:", margin, yPosition);
+                yPosition += 5;
+                
+                // Wrap notes to fit in content width
+                const splitNotes = pdf.splitTextToSize(buyerNotes, contentWidth);
+                pdf.text(splitNotes, margin, yPosition);
+                yPosition += (splitNotes.length * 5) + 5;
+            } else {
+                yPosition += 5;
+            }
+            
+            // Add property type info section if any property type is selected
+            const propertyTypeCheckboxes = document.querySelectorAll('input[name="property-type"]:checked');
+            
+            if (propertyTypeCheckboxes.length > 0) {
+                checkNewPage(10);
+                pdf.setFontSize(headingFontSize);
+                pdf.setFont(undefined, 'bold');
+                pdf.text("Property Type Information", margin, yPosition);
+                yPosition += 8;
+                
+                propertyTypeCheckboxes.forEach(checkbox => {
+                    checkNewPage(15);
+                    const value = checkbox.value;
+                    if (checklistData["property-type"] && checklistData["property-type"].items[value]) {
+                        const item = checklistData["property-type"].items[value];
+                        
+                        pdf.setFontSize(subheadingFontSize);
+                        pdf.setFont(undefined, 'bold');
+                        pdf.text(item.title, margin, yPosition);
+                        yPosition += 5;
+                        
+                        pdf.setFontSize(normalFontSize);
+                        pdf.setFont(undefined, 'normal');
+                        const splitDesc = pdf.splitTextToSize(item.description, contentWidth);
+                        pdf.text(splitDesc, margin, yPosition);
+                        yPosition += (splitDesc.length * 5) + 8;
+                    }
+                });
+            }
+            
+            // Draw a divider line
+            pdf.setLineWidth(0.1);
+            pdf.line(margin, yPosition - 3, pageWidth - margin, yPosition - 3);
+            yPosition += 5;
+            
+            // Get all checked preferences (except property type)
+            const checkedPreferences = Array.from(document.querySelectorAll('input[type="checkbox"]:checked'))
+                .filter(pref => pref.name !== "property-type");
+            
+            // Group preferences by category
+            const groupedPreferences = {};
+            checkedPreferences.forEach(pref => {
+                if (!groupedPreferences[pref.name]) {
+                    groupedPreferences[pref.name] = [];
+                }
+                groupedPreferences[pref.name].push(pref.value);
+            });
+            
+            // Process each category
+            for (const category in groupedPreferences) {
+                if (checklistData[category]) {
+                    checkNewPage(15);
+                    
+                    // Add category heading
+                    pdf.setFontSize(headingFontSize);
+                    pdf.setFont(undefined, 'bold');
+                    pdf.text(checklistData[category].title, margin, yPosition);
+                    yPosition += 8;
+                    
+                    // Process each item in this category
+                    groupedPreferences[category].forEach(value => {
+                        const item = checklistData[category].items[value];
+                        if (item) {
+                            checkNewPage(10);
+                            
+                            // Add item title
+                            pdf.setFontSize(subheadingFontSize);
+                            pdf.setFont(undefined, 'bold');
+                            pdf.text(item.title, margin, yPosition);
+                            yPosition += 8;
+                            
+                            // Get granular tasks
+                            const tasks = item.granular_tasks || extractGranularTasks(item.description);
+                            
+                            // Add checkboxes for each task
+                            tasks.forEach(task => {
+                                checkNewPage(8);
+                                
+                                // Draw checkbox
+                                pdf.setLineWidth(0.1);
+                                pdf.rect(margin, yPosition - 3, 4, 4);
+                                
+                                // Add task text
+                                pdf.setFontSize(normalFontSize);
+                                pdf.setFont(undefined, 'normal');
+                                const splitTask = pdf.splitTextToSize(task, contentWidth - 10);
+                                pdf.text(splitTask, margin + 7, yPosition);
+                                yPosition += (splitTask.length * 5) + 3;
+                            });
+                            
+                            yPosition += 5;
+                        }
+                    });
+                }
+            }
+            
+            // Add footer
+            if (pageCount > 1) {
+                // Add footer to all pages
+                for (let i = 1; i <= pageCount; i++) {
+                    pdf.setPage(i);
+                    pdf.setFontSize(smallFontSize);
+                    pdf.setTextColor(150, 150, 150);
+                    pdf.text(`Generated on ${currentDate} • Based on insights by Jaya Chakravarthi`, margin, pageHeight - 10, { align: "left" });
+                }
+            } else {
+                // Add footer to the only page
+                pdf.setFontSize(smallFontSize);
+                pdf.setTextColor(150, 150, 150);
+                pdf.text(`Generated on ${currentDate} • Based on insights by Jaya Chakravarthi`, margin, pageHeight - 10, { align: "left" });
+            }
+            
+            // Save the PDF
+            pdf.save(`Home_Buyers_Checklist_${buyerName.replace(/\s+/g, '_')}.pdf`);
+            
+            // Close modal
+            closeModal();
+        }
+        
+        // Function to extract granular tasks from a description
+        function extractGranularTasks(description) {
+            // If the item has predefined granular tasks, use those
+            const categoryKey = findCategoryKeyByDescription(description);
+            if (categoryKey && categoryKey.item && categoryKey.item.granular_tasks) {
+                return categoryKey.item.granular_tasks;
+            }
+            
+            // Otherwise, try to parse from the description
+            if (description.includes(', ') || description.includes('. ')) {
+                // Split by periods that are followed by a space and not preceded by common abbreviations
+                let parts = description.split(/(?<![A-Z]|[a-z]\.[a-z])\. (?=[A-Z])/);
+                
+                // If that didn't split it well, try by commas
+                if (parts.length === 1) {
+                    parts = description.split(', ');
+                }
+                
+                // Filter out empty parts and very short parts (likely not tasks)
+                return parts.filter(part => part.trim().length > 3);
+            }
+            
+            // If no clear list format is detected, return the whole description as one task
+            return [description];
+        }
+        
+        // Helper function to find category key by description
+        function findCategoryKeyByDescription(description) {
+            for (const categoryName in checklistData) {
+                const category = checklistData[categoryName];
+                for (const itemKey in category.items) {
+                    const item = category.items[itemKey];
+                    if (item.description === description) {
+                        return { category: categoryName, itemKey: itemKey, item: item };
+                    }
+                }
+            }
+            return null;
+        }
+    </script>
+</body>
+</html>
